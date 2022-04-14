@@ -1,0 +1,44 @@
+body, p
+  margin 0
+
+*
+  box-sizing border-box
+
+body
+  width 100vw
+  height 100vh
+  position relative
+  overflow hidden
+  background-color #000
+
+  font-family Monaco, 'Courier New', Courier, monospace
+  -webkit-font-smoothing antialiased
+  -moz-osx-font-smoothing grayscale
+
+  ::selection
+    background-color #666
+
+  --black  rgb(39, 40, 34)
+  --white  rgb(248, 248, 242)
+  --gray   rgb(117, 113, 94)
+  --red    rgb(249, 38, 114)
+  --orange rgb(253, 151, 31)
+  --yellow rgb(230, 219, 116)
+  --green  rgb(166, 226, 46)
+  --blue   rgb(102, 217, 239)
+  --purple rgb(172, 128, 255)
+
+.d
+  color var(--gray)
+.r
+  color var(--red)
+.y
+  color var(--yellow)
+.o
+  color var(--orange)
+.g
+  color var(--green)
+.b
+  color var(--blue)
+.p
+  color var(--purple)
