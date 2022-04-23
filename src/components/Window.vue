@@ -1,13 +1,19 @@
 <template>
   <div class="as-window" @click="focus">
-    <p v-for="(line, i) in logs" :key="i" v-html="line" />
-    <p>
-      <span class="as-input-line" :class="{ 'as-input-focus': focused }">
-        <span>{{ location }} > </span>
-        <span v-html="stylizedInput"></span>
-        <input ref="vinput" type="text" @input="oninput" />
-      </span>
-    </p>
+    <div class="title-bar">
+      <i @click.stop="minimize" class="ri-subtract-line"></i>
+      <i @click.stop="close" class="ri-close-line"></i>
+    </div>
+    <section>
+      <p v-for="(line, i) in logs" :key="i" v-html="line" />
+      <p>
+        <span class="as-input-line" :class="{ 'as-input-focus': focused }">
+          <span>{{ location }} > </span>
+          <span v-html="stylizedInput"></span>
+          <input ref="vinput" type="text" @input="oninput" />
+        </span>
+      </p>
+    </section>
   </div>
 </template>
 
@@ -92,14 +98,22 @@ export default defineComponent({
     },
   },
   mounted() {
-    document.body.addEventListener('keydown', this.onkey)
-    window.addEventListener('blur', this.blur)
+    this.$el.addEventListener('keydown', this.onkey)
+    const vinput = this.$refs.vinput as HTMLInputElement
+    vinput.addEventListener('blur', this.blur)
   },
   beforeUnmount() {
-    document.body.removeEventListener('keydown', this.onkey)
-    window.removeEventListener('blur', this.blur)
+    this.$el.removeEventListener('keydown', this.onkey)
+    const vinput = this.$refs.vinput as HTMLInputElement
+    vinput.removeEventListener('blur', this.blur)
   },
   methods: {
+    close() {
+      this.$emit('close')
+    },
+    minimize() {
+      this.$emit('minimize')
+    },
     blur() {
       this.focused = false
     },
@@ -217,26 +231,49 @@ export default defineComponent({
 
 <style lang="stylus" scoped>
 .as-window
-  position fixed
-  top 0
-  left 0
-  bottom 0
-  right 0
-  padding .8em 0
-  background-color var(--black)
-  color var(--white)
-  white-space pre-wrap
-  font-size 18px
-  line-height 1.1em
-  cursor text
+  position absolute
+  top 50%
+  left 50%
+  width 60vw
+  min-width 1080px
+  height 80vh
+  display flex
+  flex-direction column
+  border-radius 4px
+  border 1px solid #dbdcdc
+  transform translate3d(-50%, -50%, 0)
+  overflow hidden
   z-index 0
 
-  overflow-y scroll
-  &::-webkit-scrollbar
-    display none
+  > section
+    flex 1 1 100%
+    background-color var(--black)
+    color var(--white)
+    white-space pre-wrap
+    cursor text
+    font-size 16px
+    line-height 1.1em
+    padding .8em 0
+    overflow-y scroll
+    &::-webkit-scrollbar
+      display none
 
   >>> p
     padding 0 .8em
+
+.title-bar
+  padding 0 8px
+  flex 0 0 40px
+  height 40px
+  width 100%
+  background-color #dbdcdc
+  display flex
+  justify-content flex-end
+  align-items center
+  > i
+    font-size 20px
+    margin 4px
+    cursor pointer
 
 .as-window >>>
   .C
@@ -284,10 +321,6 @@ export default defineComponent({
   border 1px solid var(--white)
   &[active]
     background-color var(--white)
-
-@media screen and (max-width 1600px)
-  .as-window
-    font-size 16px
 
 @media screen and (max-width 800px)
   .as-window
