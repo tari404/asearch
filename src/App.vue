@@ -1,8 +1,6 @@
 <template>
   <div>
-    <div v-if="starting" class="starting-up" @click="start">
-      <i class="ri-shut-down-line"></i>
-    </div>
+    <StartingUp v-if="starting" @start="start" />
 
     <div class="desktop">
       <div class="app" @click="open('aSearch')">
@@ -30,11 +28,13 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import Window from '@/components/Window.vue'
+import StartingUp from '@/components/StartingUp.vue'
 
 export default defineComponent({
   name: 'App',
   components: {
     Window,
+    StartingUp,
   },
   data() {
     return {
@@ -66,24 +66,6 @@ export default defineComponent({
 </script>
 
 <style lang="stylus" scoped>
-
-.starting-up
-  position fixed
-  top 0
-  left 0
-  right 0
-  bottom 0
-  background-color var(--black)
-  z-index 100
-  display flex
-  font-display column
-  justify-content center
-  align-items center
-  > i
-    margin-top 16px
-    color var(--white)
-    font-size 64px
-    cursor pointer
 
 .desktop
   padding 24px

@@ -133,6 +133,9 @@ export default defineComponent({
       switch (args[0] || '') {
         case '':
           break
+        case 'reset':
+          this.logs = []
+          break
         case 'welcome':
           this.logs.push(...welcome(args))
           break
