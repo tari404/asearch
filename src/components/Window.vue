@@ -1,8 +1,15 @@
 <template>
-  <div class="as-window" @click="focus">
-    <div class="title-bar">
-      <i @click.stop="minimize" class="ri-subtract-line"></i>
-      <i @click.stop="close" class="ri-close-line"></i>
+  <div
+    class="as-window"
+    @click="focus"
+    :style="{
+      top: `${Y}px`,
+      left: `${X}px`,
+    }"
+  >
+    <div class="title-bar" @mousedown="ondrag">
+      <i @click.stop="close"></i>
+      <i @click.stop="minimize"></i>
     </div>
     <section>
       <p v-for="(line, i) in logs" :key="i" v-html="line" />
@@ -31,6 +38,9 @@ export default defineComponent({
   name: 'Window',
   data() {
     return {
+      X: 120,
+      Y: 120,
+
       location: 'aSearch.io',
       logs: [...welcome()],
 
@@ -121,6 +131,26 @@ export default defineComponent({
       this.focused = true
       const vinput = this.$refs.vinput as HTMLInputElement
       vinput.focus()
+    },
+    ondrag() {
+      let x = this.X
+      let y = this.Y
+      const { width: w } = (this.$el as HTMLElement).getBoundingClientRect()
+      const iw = innerWidth
+      const ih = innerHeight
+      const onmove = (e: MouseEvent) => {
+        x += e.movementX
+        y += e.movementY
+        this.X = Math.max(80 - w, Math.min(x, iw - 80))
+        this.Y = Math.max(0, Math.min(y, ih - 80))
+      }
+      const onstop = () => {
+        console.log(1)
+        document.body.removeEventListener('mousemove', onmove)
+        document.body.removeEventListener('mouseup', onstop)
+      }
+      document.body.addEventListener('mousemove', onmove)
+      document.body.addEventListener('mouseup', onstop)
     },
     run() {
       const input = this.input
@@ -235,48 +265,51 @@ export default defineComponent({
 <style lang="stylus" scoped>
 .as-window
   position absolute
-  top 50%
-  left 50%
-  width 60vw
-  min-width 1080px
-  height 80vh
+  width 1080px
+  height 860px
   display flex
   flex-direction column
-  border-radius 4px
-  border 1px solid #dbdcdc
-  transform translate3d(-50%, -50%, 0)
+  border-radius 16px
+  background-color rgba(#000, 70%)
+  box-shadow 0 20px 60px #0006
+  filter drop-shadow(0 10px 20px #0005)
   overflow hidden
   z-index 0
 
   > section
     flex 1 1 100%
-    background-color var(--black)
     color var(--white)
     white-space pre-wrap
     cursor text
     font-size 16px
     line-height 1.1em
-    padding .8em 0
+    padding 1em 0
     overflow-y scroll
     &::-webkit-scrollbar
       display none
 
   >>> p
-    padding 0 .8em
+    padding 0 1em
 
 .title-bar
-  padding 0 8px
+  padding 2px 10px 0
   flex 0 0 40px
   height 40px
   width 100%
-  background-color #dbdcdc
   display flex
-  justify-content flex-end
   align-items center
   > i
-    font-size 20px
-    margin 4px
+    width 14px
+    height 14px
+    border-radius 50%
+    margin 5px
+    background-color #545454
     cursor pointer
+    transition background .1s
+  > i:nth-child(1):hover
+    background-color #ef4141
+  > i:nth-child(2):hover
+    background-color #cbb911
 
 .as-window >>>
   .C

@@ -140,8 +140,8 @@ export default defineComponent({
 .starting-up
   position fixed
   top 0
-  left 0
-  right 0
+  left -20px
+  right -20px
   bottom 0
   background-color var(--black)
   display flex
@@ -149,13 +149,13 @@ export default defineComponent({
   justify-content center
   align-items center
   text-align center
-  z-index 100
+  z-index 10000
   > i
-    flex 0 0 48px
-    height 48px
+    flex 0 0 40px
+    height 40px
     margin-top 32px
     color var(--white)
-    font-size 48px
+    font-size 40px
     cursor pointer
 
 .starting-up  >>>

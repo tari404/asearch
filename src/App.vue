@@ -1,16 +1,20 @@
 <template>
   <div>
-    <StartingUp v-if="starting" @start="start" />
+    <transition name="starting">
+      <StartingUp v-if="starting" @start="start" />
+    </transition>
 
     <div class="desktop">
-      <div class="app" @click="open('aSearch')">
+      <div class="app" @dblclick="open('aSearch')">
         <img src="" />
         <span>aSearch</span>
       </div>
     </div>
 
     <div class="as-taskbar">
-      <div class="start"></div>
+      <div class="start" @click="starting = true">
+        <i class="ri-shut-down-line"></i>
+      </div>
       <div class="minimized">
         <span v-for="(item, i) in minimized" :key="i" @click="reopen(item)">
           {{ item }}
@@ -19,9 +23,11 @@
     </div>
 
     <!-- WINDOWS -->
-    <keep-alive>
-      <Window v-if="show" @close="close" @minimize="minimize" />
-    </keep-alive>
+    <transition name="window">
+      <keep-alive>
+        <Window v-if="show" @close="close" @minimize="minimize" />
+      </keep-alive>
+    </transition>
   </div>
 </template>
 
@@ -47,7 +53,8 @@ export default defineComponent({
     start() {
       this.starting = false
     },
-    open() {
+    open(name: string) {
+      this.minimized = this.minimized.filter((item) => item != name)
       this.show = true
     },
     reopen(name: string) {
@@ -65,13 +72,45 @@ export default defineComponent({
 })
 </script>
 
-<style lang="stylus" scoped>
+<style lang="stylus">
+.window-enter-from
+  transform scale(0) translateY(20px)
+  opacity 0
+.window-enter-active
+  transition all .2s ease-out
+.starting-enter-active
+  animation shake .2s
+.starting-leave-active
+  animation shake .2s reverse
 
+@keyframes shake
+  0%
+    opacity 0
+    transform translateX(0)
+  10%, 90%
+    transform translateX(-6px)
+  50%
+    transform translateX(-10px)
+  30%, 70%
+    transform translateX(8px)
+  100%
+    opacity 1
+    transform translateX(0)
+</style>
+
+<style lang="stylus" scoped>
 .desktop
+  position absolute
+  top 0
+  left 0
+  right 0
+  bottom 40px
   padding 24px
   display grid
-  grid-template-rows repeat(auto-fill, 160px)
-  gap 2px
+  grid-template-rows repeat(auto-fill, 100px)
+  grid-template-columns repeat(auto-fill, 84px)
+  gap 6px
+  background linear-gradient(to top, #3e5fa940, #1c9eb32b), linear-gradient(-225deg, #30d1c9, #05232c)
   .app
     padding 3px
     border dashed 1px transparent
@@ -80,6 +119,8 @@ export default defineComponent({
     display flex
     flex-direction column
     align-items center
+    transition all .1s
+    user-select none
     &:hover
       background-color #0002
       border dashed 1px #0003
@@ -93,6 +134,7 @@ export default defineComponent({
       line-height 16px
       color #fff
       text-shadow 0 0 2px #000
+      word-break break-all
 
 .as-taskbar
   position absolute
@@ -100,14 +142,20 @@ export default defineComponent({
   right 0
   bottom 0
   height 40px
-  padding 4px
-  background-color #bababa
-  border-top 1px solid #dbdcdc
+  background-image linear-gradient(to left, #e6e9f0, #eef1f5)
   display flex
+  z-index 1000
   .start
     width 64px
     height 100%
-    background-color #dbdcdc
+    background-color #fff0
+    display flex
+    justify-content center
+    align-items center
+    font-size 24px
+    color var(--gray)
+    &:hover
+      background-color #fff
   .minimized
     margin-left 18px
     display flex
@@ -116,8 +164,10 @@ export default defineComponent({
       width 160px
       padding 8px
       height 100%
-      background-color #dbdcdc
+      background-color #0003
       display flex
       align-items center
-      cursor pointer
+      transition background .1s
+    > span:hover
+      background-color #0002
 </style>
