@@ -13,7 +13,8 @@
     </div>
     <section>
       <p v-for="(line, i) in logs" :key="i" v-html="line" />
-      <p>
+      <p v-for="(line, i) in activelogs" :key="i" v-html="line" />
+      <p v-show="!hold">
         <span class="as-input-line" :class="{ 'as-input-focus': focused }">
           <span>{{ location }} > </span>
           <span v-html="stylizedInput"></span>
@@ -27,7 +28,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 
-import { welcome, errorCmd, result } from '@/assets/lib/dialogue'
+import { welcome, errorCmd, search } from '@/assets/lib/dialogue'
 
 interface TypedChat {
   chat: string
@@ -42,12 +43,18 @@ export default defineComponent({
       Y: 120,
 
       location: 'aSearch.io',
-      logs: [...welcome()],
+      logs: [] as string[],
+      activelogs: [] as string[],
 
       focused: false,
+      hold: false,
       cursorStart: 0,
       cursorEnd: 0,
 
+      runing: null as Promise<boolean> | boolean | null,
+
+      history: [] as string[],
+      historyPoint: -1,
       input: '',
     }
   },
@@ -107,6 +114,9 @@ export default defineComponent({
       return output
     },
   },
+  created() {
+    welcome([], this.logs)
+  },
   mounted() {
     this.$el.addEventListener('keydown', this.onkey)
     const vinput = this.$refs.vinput as HTMLInputElement
@@ -145,45 +155,55 @@ export default defineComponent({
         this.Y = Math.max(0, Math.min(y, ih - 80))
       }
       const onstop = () => {
-        console.log(1)
         document.body.removeEventListener('mousemove', onmove)
         document.body.removeEventListener('mouseup', onstop)
       }
       document.body.addEventListener('mousemove', onmove)
       document.body.addEventListener('mouseup', onstop)
     },
-    run() {
+    async run() {
       const input = this.input
       this.cursorStart = -1
       this.cursorEnd = -1
       const cmd = `${this.location} > ${this.stylizedInput}`
       this.logs.push(cmd)
+      this.history.unshift(input)
 
       const args = input.split(' ')
-      switch (args[0] || '') {
-        case '':
-          break
-        case 'reset':
-          this.logs = []
-          break
-        case 'welcome':
-          this.logs.push(...welcome(args))
-          break
-        case 'search':
-          this.logs.push(...result(args))
-          break
-        default:
-          this.logs.push(...errorCmd(args))
-      }
+
+      const runing = (() => {
+        this.hold = true
+        switch (args[0] || '') {
+          case '':
+            return true
+          case 'reset':
+            this.logs = []
+            return true
+          case 'welcome':
+            return welcome(args, this.activelogs)
+          case 'search':
+            return search(args, this.activelogs)
+          default:
+            return errorCmd(args, this.activelogs)
+        }
+      })()
+      this.runing = runing
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const result = await runing
+
+      this.logs.push(...this.activelogs)
+      this.activelogs = []
+
+      this.hold = false
+      this.input = ''
+      this.cursorStart = 0
+      this.cursorEnd = 0
 
       this.$nextTick(() => {
         const input = this.$refs.vinput as HTMLInputElement
         input.scrollIntoView()
       })
-
-      this.input = ''
-      this.cursorStart = 0
-      this.cursorEnd = -0
     },
     delectCurrentSelectedRange() {
       const input = this.input
@@ -194,54 +214,89 @@ export default defineComponent({
       this.cursorStart = curL
       this.cursorEnd = curL
     },
+    // HANDLE KEY =============================================
+    selectHistoryCmd(dir: 1 | -1) {
+      const newP = this.historyPoint + dir
+      if (newP < 0 || newP >= this.history.length) {
+        return
+      }
+
+      const cmd = this.history[newP]
+      const l = cmd.length
+
+      this.historyPoint = newP
+      this.input = cmd
+      this.cursorEnd = l
+      this.cursorStart = l
+    },
+    moveCursor(dir: 1 | -1, shiftKey: boolean) {
+      const newC = this.cursorStart + dir
+      if (newC < 0 || newC > this.input.length) {
+        return
+      }
+      this.cursorStart = newC
+      if (!shiftKey) {
+        this.cursorEnd = this.cursorStart
+      }
+    },
+    delete() {
+      if (this.cursorStart !== this.cursorEnd) {
+        // rangeIsSelected
+        this.delectCurrentSelectedRange()
+      } else if (this.cursorStart > 0) {
+        this.input =
+          this.input.slice(0, this.cursorStart - 1) +
+          this.input.slice(this.cursorStart)
+        this.cursorStart--
+        this.cursorEnd--
+      }
+    },
+    // HANDLE KEY END =========================================
     onkey(e: KeyboardEvent) {
       e.preventDefault()
+
+      if (this.hold) {
+        // TODO: ctrl + c
+        return
+      }
 
       const vinput = this.$refs.vinput as HTMLInputElement
       vinput.scrollIntoView()
 
       const key = e.key
 
-      let input = this.input
-      let curS = this.cursorStart
-      let curE = this.cursorEnd
-      const rangeIsSelected = curS !== curE
+      if (key !== 'ArrowUp' && key !== 'ArrowDown') {
+        this.historyPoint = -1
+      }
 
-      if (key === 'Backspace') {
-        if (rangeIsSelected) {
-          this.delectCurrentSelectedRange()
-        } else if (curS > 0) {
-          this.input = input.slice(0, curS - 1) + input.slice(curS)
-          this.cursorStart--
-          this.cursorEnd--
-        }
-      } else if (key.length === 1) {
+      switch (key) {
+        case 'Enter':
+          return this.run()
+        case 'Backspace':
+          return this.delete()
+        case 'ArrowUp':
+        case 'ArrowDown':
+          return this.selectHistoryCmd(key === 'ArrowUp' ? 1 : -1)
+        case 'ArrowLeft':
+        case 'ArrowRight':
+          return this.moveCursor(key === 'ArrowRight' ? 1 : -1, e.shiftKey)
+      }
+
+      if (key.length === 1) {
         if (e.ctrlKey) {
           // TODO
           return
         }
-        if (rangeIsSelected) {
+        if (this.cursorStart !== this.cursorEnd) {
+          // rangeIsSelected
           this.delectCurrentSelectedRange()
-          input = this.input
-          curS = this.cursorStart
-          curE = this.cursorEnd
         }
-        this.input = input.slice(0, curS) + key + input.slice(curS)
+        this.input =
+          this.input.slice(0, this.cursorStart) +
+          key +
+          this.input.slice(this.cursorStart)
         this.cursorStart++
         this.cursorEnd++
-      } else if (key === 'ArrowLeft') {
-        if (this.cursorStart > 0) this.cursorStart--
-        if (!e.shiftKey) {
-          // select
-          this.cursorEnd = this.cursorStart
-        }
-      } else if (key === 'ArrowRight') {
-        if (this.cursorStart < input.length) this.cursorStart++
-        if (!e.shiftKey) {
-          this.cursorEnd = this.cursorStart
-        }
-      } else if (key === 'Enter') {
-        this.run()
       }
     },
     oninput(e: InputEvent) {
@@ -282,7 +337,7 @@ export default defineComponent({
     white-space pre-wrap
     cursor text
     font-size 16px
-    line-height 1.1em
+    line-height 20px
     padding 1em 0
     overflow-y scroll
     &::-webkit-scrollbar
@@ -345,14 +400,14 @@ export default defineComponent({
   .cursor-start
     position absolute
     display inline-block
-    height 1.1em
+    height 20px
 
 .as-cursor
   position absolute
   top 0
   left 0
   display inline-block
-  height 1.1em
+  height 20px
   width 1ch
   border 1px solid var(--white)
   &[active]
