@@ -83,9 +83,10 @@ export const search: Command = async (args, logs) => {
     return false
   }
 
-  return fetch('http://asearch.io/search_mirror?q=' + encodeURI(keywords))
-    .then((res) => res.json)
+  return fetch('https://asearch.io/search_mirror?q=' + encodeURI(keywords))
+    .then((res) => res.json())
     .then((res: any) => {
+      console.log(res)
       const cols = 80
       const rows = 2
       const w = cols - 4
