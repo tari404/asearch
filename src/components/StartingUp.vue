@@ -1,7 +1,6 @@
 <template>
   <div class="starting-up">
     <div ref="logo" class="logo"></div>
-    <i class="ri-shut-down-line" @click="$emit('start')"></i>
   </div>
 </template>
 
@@ -127,6 +126,9 @@ export default defineComponent({
   },
   mounted() {
     this.animList = render(this.$refs.logo as HTMLElement)
+    setTimeout(() => {
+      this.$emit('start')
+    }, 2000)
   },
   beforeUnmount() {
     for (const a of this.animList) {
@@ -143,12 +145,13 @@ export default defineComponent({
   left -20px
   right -20px
   bottom 0
-  background-color var(--black)
+  background linear-gradient(to top, #30d1c9, #05232c, #222) 0 0 / 100% 200%
   display flex
   flex-direction column
   justify-content center
   align-items center
   text-align center
+  user-select none
   z-index 10000
   > i
     flex 0 0 40px
@@ -177,9 +180,9 @@ export default defineComponent({
     justify-content center
     align-items center
     overflow hidden
-    background-color var(--black)
+    // background-color transparent
 
-    mask-image url(textlogo.png)
+    mask-image url("~@/assets/textlogo.png")
     mask-repeat no-repeat
     mask-size 100%
 </style>

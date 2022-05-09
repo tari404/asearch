@@ -1,5 +1,3 @@
-import testdata from './search_data'
-
 type Arguments = string[]
 
 type Command = (
@@ -71,6 +69,26 @@ export const errorCmd: Command = (args, logs) => {
 //     ' ',
 //   ]
 // }
+
+type SearchItem = {
+  Score: number
+  arweaveTx: string
+  blockHeight: number
+  content: string
+  createdAt: string
+  cursor: string
+  digest: string
+  id: number
+  link: string
+  originalDigest: string
+  publicationName: string
+  publishedAt: string
+  title: string
+}
+type SearchResponse = {
+  data: SearchItem[]
+}
+
 export const search: Command = async (args, logs) => {
   const keywords = args[1]
   if (!keywords) {
@@ -84,12 +102,12 @@ export const search: Command = async (args, logs) => {
   }
 
   return fetch('http://asearch.io/search_mirror?q=' + encodeURI(keywords))
-    .then((res) => res.json)
-    .then((res: any) => {
+    .then((res) => res.json())
+    .then((res: SearchResponse) => {
       const cols = 80
       const rows = 2
       const w = cols - 4
-      const msgs = res.data.map((item: any) => {
+      const msgs = res.data.map((item) => {
         let title = item.title.trim()
         if (title.length > w) {
           title = title.substring(0, w - 3)

@@ -5,10 +5,23 @@
     </transition>
 
     <div class="desktop">
-      <div class="app" @dblclick="open('aSearch')">
+      <div class="app" @click="open('aSearch')">
         <img src="" />
         <span>aSearch</span>
       </div>
+      <a
+        v-for="item in links"
+        :key="item.name"
+        class="app"
+        :href="item.url"
+        target="_blank"
+      >
+        <img src="" />
+        <span>{{ item.name }}</span>
+      </a>
+
+      <!-- BACKGROUND -->
+      <img class="logo" src="@/assets/textlogo.png" />
     </div>
 
     <div class="as-taskbar">
@@ -36,6 +49,14 @@ import { defineComponent } from 'vue'
 import Window from '@/components/Window.vue'
 import StartingUp from '@/components/StartingUp.vue'
 
+const links = [
+  { name: 'Discord', url: '' },
+  { name: 'Arweave', url: '' },
+  { name: 'Twitter', url: '' },
+  { name: 'Github', url: '' },
+  { name: 'Medium', url: '' },
+]
+
 export default defineComponent({
   name: 'App',
   components: {
@@ -47,11 +68,17 @@ export default defineComponent({
       starting: true,
       show: false,
       minimized: [] as string[],
+
+      // desktop
+      links,
     }
   },
   methods: {
     start() {
       this.starting = false
+      setTimeout(() => {
+        this.reopen('aSearch')
+      }, 500)
     },
     open(name: string) {
       this.minimized = this.minimized.filter((item) => item != name)
@@ -77,11 +104,15 @@ export default defineComponent({
   transform scale(0) translateY(20px)
   opacity 0
 .window-enter-active
-  transition all .2s ease-out
+  transition all .16s ease-out
+
 .starting-enter-active
-  animation shake .2s
+  animation shake .16s
+.starting-leave-to
+  background-position-y 100% !important
+  opacity 0
 .starting-leave-active
-  animation shake .2s reverse
+  transition background-position-y .3s, opacity .2s .1s
 
 @keyframes shake
   0%
@@ -107,6 +138,7 @@ export default defineComponent({
   bottom 40px
   padding 24px
   display grid
+  grid-auto-flow column
   grid-template-rows repeat(auto-fill, 100px)
   grid-template-columns repeat(auto-fill, 84px)
   gap 6px
@@ -115,7 +147,7 @@ export default defineComponent({
     padding 3px
     border dashed 1px transparent
     width 84px
-    height 84px
+    height fit-content
     display flex
     flex-direction column
     align-items center
@@ -135,6 +167,20 @@ export default defineComponent({
       color #fff
       text-shadow 0 0 2px #000
       word-break break-all
+      text-overflow ellipsis
+      display -webkit-box
+      -webkit-box-orient vertical
+      -webkit-line-clamp 2
+      overflow hidden
+  .logo
+    position absolute
+    top 50vh
+    left 50vw
+    width 704px
+    height 137px
+    transform translate3d(-50%, -50%, 0)
+    opacity .1
+    user-select none
 
 .as-taskbar
   position absolute
@@ -164,10 +210,9 @@ export default defineComponent({
       width 160px
       padding 8px
       height 100%
-      background-color #0003
       display flex
       align-items center
       transition background .1s
     > span:hover
-      background-color #0002
+      background-color #0001
 </style>

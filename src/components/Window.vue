@@ -18,6 +18,7 @@
         <span class="as-input-line" :class="{ 'as-input-focus': focused }">
           <span>{{ location }} > </span>
           <span v-html="stylizedInput"></span>
+          <span class="composing">{{ composing }}</span>
           <input ref="vinput" type="text" @input="oninput" />
         </span>
       </p>
@@ -56,6 +57,7 @@ export default defineComponent({
       history: [] as string[],
       historyPoint: -1,
       input: '',
+      composing: '',
     }
   },
   computed: {
@@ -251,6 +253,19 @@ export default defineComponent({
         this.cursorEnd--
       }
     },
+    enter(text: string) {
+      if (this.cursorStart !== this.cursorEnd) {
+        // rangeIsSelected
+        this.delectCurrentSelectedRange()
+      }
+      this.input =
+        this.input.slice(0, this.cursorStart) +
+        text +
+        this.input.slice(this.cursorStart)
+      const l = text.length
+      this.cursorStart += l
+      this.cursorEnd += l
+    },
     // HANDLE KEY END =========================================
     onkey(e: KeyboardEvent) {
       e.preventDefault()
@@ -287,22 +302,21 @@ export default defineComponent({
           // TODO
           return
         }
-        if (this.cursorStart !== this.cursorEnd) {
-          // rangeIsSelected
-          this.delectCurrentSelectedRange()
-        }
-        this.input =
-          this.input.slice(0, this.cursorStart) +
-          key +
-          this.input.slice(this.cursorStart)
-        this.cursorStart++
-        this.cursorEnd++
+        this.enter(key)
       }
     },
     oninput(e: InputEvent) {
-      console.log(e)
       const input = e.target as HTMLInputElement
       input.value = ''
+
+      if (!e.data) return
+
+      if (e.isComposing) {
+        this.composing = e.data
+      } else {
+        this.composing = ''
+        this.enter(e.data)
+      }
       // const chat = e.data
       // const input = this.input
       // const x = this.cursorStart
@@ -325,9 +339,10 @@ export default defineComponent({
   display flex
   flex-direction column
   border-radius 16px
-  background-color rgba(#000, 70%)
+  background-color rgba(#000, 60%)
   box-shadow 0 20px 60px #0006
   filter drop-shadow(0 10px 20px #0005)
+  backdrop-filter blur(16px)
   overflow hidden
   z-index 0
 
@@ -402,6 +417,10 @@ export default defineComponent({
     display inline-block
     height 20px
 
+  .composing
+    background-color #000
+    height 20px
+
 .as-cursor
   position absolute
   top 0
@@ -412,12 +431,4 @@ export default defineComponent({
   border 1px solid var(--white)
   &[active]
     background-color var(--white)
-
-@media screen and (max-width 800px)
-  .as-window
-    font-size 14px
-
-@media screen and (max-width 400px)
-  .as-window
-    font-size 12px
 </style>
