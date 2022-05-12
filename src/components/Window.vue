@@ -19,7 +19,14 @@
           <span>{{ location }} > </span>
           <span v-html="stylizedInput"></span>
           <span class="composing">{{ composing }}</span>
-          <input ref="vinput" type="text" @input="oninput" />
+          <input
+            ref="vinput"
+            type="text"
+            @blur="blur"
+            @compositionstart="compositionstart"
+            @compositionupdate="compositionupdate"
+            @compositionend="compositionend"
+          />
         </span>
       </p>
     </section>
@@ -49,6 +56,8 @@ export default defineComponent({
 
       focused: false,
       hold: false,
+      isComposing: false,
+      nextInput: 0,
       cursorStart: 0,
       cursorEnd: 0,
 
@@ -121,13 +130,9 @@ export default defineComponent({
   },
   mounted() {
     this.$el.addEventListener('keydown', this.onkey)
-    const vinput = this.$refs.vinput as HTMLInputElement
-    vinput.addEventListener('blur', this.blur)
   },
   beforeUnmount() {
     this.$el.removeEventListener('keydown', this.onkey)
-    const vinput = this.$refs.vinput as HTMLInputElement
-    vinput.removeEventListener('blur', this.blur)
   },
   methods: {
     close() {
@@ -254,17 +259,19 @@ export default defineComponent({
       }
     },
     enter(text: string) {
-      if (this.cursorStart !== this.cursorEnd) {
-        // rangeIsSelected
-        this.delectCurrentSelectedRange()
-      }
-      this.input =
-        this.input.slice(0, this.cursorStart) +
-        text +
-        this.input.slice(this.cursorStart)
-      const l = text.length
-      this.cursorStart += l
-      this.cursorEnd += l
+      this.nextInput = requestAnimationFrame(() => {
+        if (this.cursorStart !== this.cursorEnd) {
+          // rangeIsSelected
+          this.delectCurrentSelectedRange()
+        }
+        this.input =
+          this.input.slice(0, this.cursorStart) +
+          text +
+          this.input.slice(this.cursorStart)
+        const l = text.length
+        this.cursorStart += l
+        this.cursorEnd += l
+      })
     },
     // HANDLE KEY END =========================================
     onkey(e: KeyboardEvent) {
@@ -272,6 +279,10 @@ export default defineComponent({
 
       if (this.hold) {
         // TODO: ctrl + c
+        return
+      }
+
+      if (this.isComposing) {
         return
       }
 
@@ -305,27 +316,21 @@ export default defineComponent({
         this.enter(key)
       }
     },
-    oninput(e: InputEvent) {
+    compositionstart(e: CompositionEvent) {
+      this.isComposing = true
+      cancelAnimationFrame(this.nextInput)
+      this.composing = e.data
+    },
+    compositionupdate(e: CompositionEvent) {
+      this.composing = e.data
+    },
+    compositionend(e: CompositionEvent) {
+      this.isComposing = false
       const input = e.target as HTMLInputElement
       input.value = ''
 
-      if (!e.data) return
-
-      if (e.isComposing) {
-        this.composing = e.data
-      } else {
-        this.composing = ''
-        this.enter(e.data)
-      }
-      // const chat = e.data
-      // const input = this.input
-      // const x = this.cursorStart
-
-      // if (e.inputType) {
-      //   this.input = input.slice(0, x) + chat + input.slice(x)
-      //   this.cursorStart = x + 1
-      //   this.cursorEnd = x + 1
-      // }
+      this.composing = ''
+      this.enter(e.data)
     },
   },
 })
